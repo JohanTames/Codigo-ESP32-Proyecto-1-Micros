@@ -105,9 +105,6 @@ bool homingLocal() {
       return true;
     }
   }
-  
-  Serial.println("ERROR: Hall no encontrado");
-  digitalWrite(ENABLE_PIN, HIGH);
 
   stepperCentral.move(ventana);
   while (stepperCentral.distanceToGo() != 0) {
@@ -122,11 +119,14 @@ bool homingLocal() {
       return true;
     }
   }
+  Serial.println("ERROR: Hall no encontrado");
+  moverCentral(0);
+  digitalWrite(ENABLE_PIN, HIGH);
   return false;
 }
 
 void moverCentral(int destino) {
-  if (movimientosCentral >= 2) {
+  if (movimientosCentral >= 15) {
     Serial.println("Re-homing periódico");
     digitalWrite(ENABLE_PIN, LOW);
     stepperCentral.moveTo(POS_PERCHERO[1]);
@@ -199,17 +199,17 @@ void pruebaMotores() {
 
   Serial.println("INICIANDO PRUEBA DE MOTORES");
   // Mueve del 0 al 1, luego al 2
-  for (int p = 0; p < 3; p++) {
-    Serial.printf("Moviendo a perchero %d\n", p);
-    moverCentral(p);
-    delay(1500);
-  }
-  // Probar rotación de prendas en el perchero actual (perchero 2 tras el bucle anterior)
-  Serial.println("Probando rotación de prendas en perchero 2");
+  // for (int p = 0; p < 3; p++) {
+  //   Serial.printf("Moviendo a perchero %d\n", p);
+  //   moverCentral(p);
+  //   delay(5000);
+  // }
+  // Probar rotación de prendas en percheros
+  Serial.println("Probando rotación de prendas en percheros");
   for (int pos = 0; pos < 5; pos++) { 
     Serial.printf("Llevando prenda a posición %d\n", pos);
     moverPerchero(2, pos);
-    delay(10000);
+    delay(1000);
     // if (pos==4) pos = 0; // Provoca que sea infinito
   }
   // Regresar a perchero 0, posición 0
@@ -243,16 +243,44 @@ void setup() {
   while (!botonFlag) {}
   botonFlag = false;
 
-  if (!homingLocal()) {
-    Serial.println("ADVERTENCIA: homing inicial fallido");
-  }
+  // if (!homingLocal()) {
+  //   Serial.println("ADVERTENCIA: homing inicial fallido");
+  // }
 
 }
 
 void loop() {
-  #ifdef TEST_MOTORES
-    pruebaMotores();  // Ejecuta la secuencia de prueba una sola vez
-  #endif
+  // #ifdef TEST_MOTORES
+  //   pruebaMotores();  // Ejecuta la secuencia de prueba una sola vez
+  // #endif
+
+  moverCentral(0);
+  for (int pos = 0; pos < 5; pos++) { 
+    Serial.printf("Llevando prenda a posición %d\n", pos);
+    moverPerchero(2, pos);
+    delay(1000);
+  }
+
+  moverCentral(1);
+  for (int pos = 0; pos < 5; pos++) { 
+    Serial.printf("Llevando prenda a posición %d\n", pos);
+    moverPerchero(2, pos);
+    delay(1000);
+  }
+
+  moverCentral(2);
+  for (int pos = 0; pos < 5; pos++) { 
+    Serial.printf("Llevando prenda a posición %d\n", pos);
+    moverPerchero(2, pos);
+    delay(1000);
+  }
+
+  moverCentral(0);
+  for (int pos = 0; pos < 5; pos++) { 
+    Serial.printf("Llevando prenda a posición %d\n", pos);
+    moverPerchero(2, pos);
+    delay(1000);
+  }
 
   static unsigned long ultimoBoton = 0;
   if (botonFlag) {
