@@ -36,6 +36,7 @@ int pasos_por_perchero = 1067;
 const int POS_PERCHERO[3] = { -pasos_por_perchero, 0, pasos_por_perchero };
 int pasos_por_prenda = 410;
 int movimientosCentral = 0;
+int contadorMovPerchero = 0;
 
 // ISR
 void IRAM_ATTR ISR_boton() {
@@ -158,6 +159,14 @@ void moverPerchero(int perchero, int posicion) {
     posicion_actual[i] += delta;
     while (posicion_actual[i] >= 5) posicion_actual[i] -= 5;
     while (posicion_actual[i] < 0) posicion_actual[i] += 5;
+  }
+
+  // Corrige error
+  contadorMovPerchero++;
+  if (contadorMovPerchero >= 5) {
+    Serial.printf("Corrigiendo error perchero");
+    motoresPercheros.step(114); // Gira el ángulo elegido (20° = 20/360 * 2048 =aprox 114 pasos)
+    contadorMovPerchero = 0;
   }
 }
 
