@@ -2,7 +2,7 @@
 #include <Stepper.h>
 
 // Descomentar la siguiente línea para probar el programa sin la rasp
-#define TEST_MOTORES
+//#define TEST_MOTORES
 
 // UART
 #define RXD2 16
@@ -127,7 +127,7 @@ bool homingLocal() {
 }
 
 void moverCentral(int destino) {
-  if (movimientosCentral >= 15) {
+  if (movimientosCentral >= 2) {
     Serial.println("Re-homing periódico");
     digitalWrite(ENABLE_PIN, LOW);
     stepperCentral.moveTo(POS_PERCHERO[1]);
@@ -246,7 +246,7 @@ void setup() {
 
   stepperCentral.setMaxSpeed(1200);
   stepperCentral.setAcceleration(600);
-  motoresPercheros.setSpeed(10);
+  motoresPercheros.setSpeed(3);
 
   Serial.println("Presione Boton");
   while (!botonFlag) {}
@@ -259,9 +259,9 @@ void setup() {
 }
 
 void loop() {
-  // #ifdef TEST_MOTORES
-  //   pruebaMotores();  // Ejecuta la secuencia de prueba una sola vez
-  // #endif
+   #ifdef TEST_MOTORES
+     pruebaMotores();  // Ejecuta la secuencia de prueba una sola vez
+  #endif
 
   moverCentral(0);
   for (int pos = 0; pos < 5; pos++) { 
