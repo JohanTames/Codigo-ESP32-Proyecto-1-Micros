@@ -84,6 +84,7 @@ int pasos_por_prenda = 410;
 
 // Cada ciertos movimientos se hace re-homing automático
 int movimientosCentral = 0;
+int contadorMovPerchero = 0;
 
 // Funciones ISR
 
@@ -112,11 +113,11 @@ uint8_t leerDIP() {
 
 // UART TX
 void enviarCaracteristicas() {
-  static uint8_t data[5];
+  static uint8_t data[5]; // Almacena caracteristicas del dip
   static int index = 0;
 
   uint8_t valor = leerDIP();
-  Serial.printf("boton presionado, valor dip leido: %d\n", valor);
+  Serial.printf("Botón presionado, valor dip leido: %d\n", valor);
 
   // 6 y 7 no se usan, 0 es no elegir.
   if (valor <= 5) data[index++] = valor;
@@ -242,7 +243,7 @@ bool homingLocal() {
 void moverCentral(int destino) {
 
   // Re-homing periódico (cada ciertos movimientos del central)
-  if (movimientosCentral >= 15) {
+  if (movimientosCentral >= 5) {
     Serial.println("Re-homing periódico");
 
     digitalWrite(ENABLE_PIN, LOW);
@@ -314,6 +315,14 @@ void moverPerchero(int perchero, int posicion) {
     while (posicion_actual[i] < 0) {
       posicion_actual[i] += 5;
     }
+  }
+
+  // Corrige error
+  contadorMovPerchero++;
+  if (contadorMovPerchero >= 5) {
+    Serial.printf("Corrigiendo error perchero");
+    motoresPercheros.step(114);  // Gira el ángulo elegido (20° = 20/360 * 2048 =aprox 114 pasos)
+    contadorMovPerchero = 0;
   }
 }
 
