@@ -412,7 +412,11 @@ void setup() {
   stepperCentral.setAcceleration(600);
 
   // Configuración 28BYJ
-  motoresPercheros.setSpeed(10);
+  motoresPercheros.setSpeed(3);
+
+  Serial.println("Presione Boton");
+  while (!botonFlag) {}
+  botonFlag = false;
 
   // Hace homing inicial con advertencia si falla
   if (!homingLocal()) {
