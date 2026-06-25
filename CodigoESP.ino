@@ -54,12 +54,12 @@ AccelStepper stepperCentral(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 // Todos los motores de los percheros giran al mismo tiempo
 // Se utilizan los mismos pines para los tres ULN2003
 // Si gira al revés intercambiar IN2 e IN3
-Stepper motoresPercheros(STEPS_28BYJ, 4, 5, 18, 19);
+Stepper motoresPercheros(STEPS_28BYJ, 4, 18, 5, 19);
 
 // Variables
 // El sistema inicia asumiendo que está cerca del perchero 1
 // El Hall corrige la referencia angular real
-int perchero_actual = 1;
+int perchero_actual = 0;
 int posicion_actual[3] = {0, 0, 0};
 
 // NEMA17:
@@ -74,9 +74,9 @@ int pasos_por_perchero = 1067;
 // El perchero 1 ahora es la referencia física del Hall
 // Pero el rango sigue siendo respecto al perchero 0
 const int POS_PERCHERO[3] = {
-    -pasos_por_perchero, // perchero 0 (-120° respecto al Hall)
-    0, // perchero 1 (origen físico del Hall)
-    pasos_por_perchero // perchero 2 (-240°)
+    0, // perchero 0 (frente, punto de homing)
+    -pasos_por_perchero, // perchero 1 (+120°)
+    pasos_por_perchero // perchero 1 (-120°)
 };
 
 // 2048/5 = 409.6
@@ -158,9 +158,9 @@ bool homingLocal() {
   // Si ya detecta el imán y la posición actual está cerca de perchero 1 (por si acaso falso contacto o campo magnético externo)
     if (digitalRead(HALL_PIN) == LOW) {
         // Verificar que no estamos muy lejos del perchero 1
-        if (abs(stepperCentral.currentPosition() - POS_PERCHERO[1]) < ventana) {
+        if (abs(stepperCentral.currentPosition() - 0) < ventana) {
             stepperCentral.setCurrentPosition(0);
-            perchero_actual = 1;
+            perchero_actual = 0;
             digitalWrite(ENABLE_PIN, HIGH);
             Serial.println("Ya estaba en el imán, referencia asumida.");
             return true;
@@ -187,7 +187,7 @@ bool homingLocal() {
       // }
 
       stepperCentral.setCurrentPosition(0);
-      perchero_actual = 1; // El imán está en el perchero 1
+      perchero_actual = 0;
 
       Serial.println("Referencia encontrada");
       digitalWrite(ENABLE_PIN, HIGH);
@@ -211,7 +211,7 @@ bool homingLocal() {
       // }
 
       stepperCentral.setCurrentPosition(0);
-      perchero_actual = 1;
+      perchero_actual = 0;
 
       Serial.println("Referencia encontrada");
       digitalWrite(ENABLE_PIN, HIGH);
@@ -226,8 +226,8 @@ bool homingLocal() {
     if (hallFlancoDetectado) {
       stepperCentral.stop();
       // while (stepperCentral.isRunning()) stepperCentral.run();
-      stepperCentral.setCurrentPosition(0);
-      perchero_actual = 1;
+      stepperCentral.setCurrentPosition(POS_PERCHERO[0]);  // -1067
+      perchero_actual = 0;
       digitalWrite(ENABLE_PIN, HIGH);
       Serial.println("Referencia encontrada");
       return true;
@@ -243,19 +243,19 @@ bool homingLocal() {
 void moverCentral(int destino) {
 
   // Re-homing periódico (cada ciertos movimientos del central)
-  if (movimientosCentral >= 5) {
+  if (movimientosCentral >= 15) {
     Serial.println("Re-homing periódico");
 
     digitalWrite(ENABLE_PIN, LOW);
 
     // Ir a perchero 1 porque ahora es la referencia física
-    stepperCentral.moveTo(POS_PERCHERO[1]);
+    stepperCentral.moveTo(0);
 
     while (stepperCentral.distanceToGo() != 0) {
       stepperCentral.run();
     }
 
-    perchero_actual = 1;
+    perchero_actual = 0;
 
     bool exito = homingLocal();
 
@@ -295,17 +295,17 @@ void moverCentral(int destino) {
 // Todos giran simultáneamente porque comparten señales
 // Por simplicidad no hago muchos cambios en esta función, anteriormente manejaba los motores por separado
 void moverPerchero(int perchero, int posicion) {
-
-  // Calcular cuánto debe girar el perchero solicitado
-  int delta = posicion - posicion_actual[perchero];
-  int pasos = delta * pasos_por_prenda;
-
+    // Calcular cuánto debe girar el perchero solicitado
+  int delta = -(posicion - posicion_actual[perchero]);
+  int pasos = delta * pasos_por_prenda*-1;
+  Serial.println(pasos);
   // Todos los motores reciben la misma señal
   motoresPercheros.step(pasos);
 
   // Como todos giraron, actualizar todas las posiciones internas
   for (int i = 0; i < 3; i++) {
-    posicion_actual[i] += delta;
+    posicion_actual[i] += -delta;
+    
 
     // Mantener posiciones entre 0 y 4
     while (posicion_actual[i] >= 5) {
@@ -321,7 +321,7 @@ void moverPerchero(int perchero, int posicion) {
   contadorMovPerchero++;
   if (contadorMovPerchero >= 5) {
     Serial.printf("Corrigiendo error perchero");
-    motoresPercheros.step(114);  // Gira el ángulo elegido (20° = 20/360 * 2048 =aprox 114 pasos)
+    motoresPercheros.step(pasos/10);  // Gira el ángulo elegido (20° = 20/360 * 2048 =aprox 114 pasos)
     contadorMovPerchero = 0;
   }
 }
@@ -413,6 +413,8 @@ void setup() {
 
   // Configuración 28BYJ
   motoresPercheros.setSpeed(3);
+
+  Serial.println("---- Codigo Final ----");
 
   Serial.println("Presione Boton");
   while (!botonFlag) {}
